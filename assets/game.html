@@ -1,0 +1,322 @@
+<iframe srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;utf-8&quot;/&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width,initial-scale=1.0&quot;/&gt;
+&lt;style&gt;
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:#060913; color:#e2e8f0; font-family:system-ui,sans-serif; overflow:hidden; height:430px; }
+  #bar { position:absolute; top:8px; left:8px; right:8px; z-index:20; display:flex; flex-wrap:wrap; gap:6px; background:rgba(10,15,30,0.78); backdrop-filter:blur(10px); padding:8px; border-radius:12px; border:1px solid rgba(56,189,248,0.3); }
+  .st-pill { font-size:11px; padding:4px 8px; border-radius:999px; background:rgba(255,255,255,0.06); color:#94a3b8; }
+  .st-pill.done { background:rgba(16,185,129,0.22); color:#34d399; border:1px solid rgba(16,185,129,0.45); }
+  .st-pill.active { background:rgba(56,189,248,0.25); color:#38bdf8; border:1px solid #38bdf8; box-shadow:0 0 10px rgba(56,189,248,0.4); }
+  #hud { position:absolute; bottom:12px; left:12px; right:12px; z-index:20; display:flex; justify-content:space-between; align-items:flex-end; pointer-events:none; }
+  .joy { width:78px; height:78px; border-radius:50%; border:2px solid rgba(56,189,248,0.6); background:rgba(15,23,42,0.55); display:flex; align-items:center; justify-content:center; font-size:11px; color:#38bdf8; pointer-events:auto; }
+  .btns { display:flex; gap:8px; pointer-events:auto; }
+  .btn-act { padding:10px 14px; border-radius:10px; border:none; font-weight:700; color:#fff; cursor:pointer; }
+  .btn-gas { background:linear-gradient(135deg,#10b981,#059669); }
+  .btn-brk { background:linear-gradient(135deg,#ef4444,#b91c1c); }
+  #title-badge { position:absolute; top:58px; left:12px; z-index:15; font-size:12px; background:rgba(15,23,42,0.7); padding:4px 10px; border-radius:8px; border:1px solid rgba(168,85,247,0.4); color:#e9d5ff; }
+&lt;/style&gt;
+&lt;script type=&quot;importmap&quot;&gt;
+{
+  &quot;imports&quot;: {
+    &quot;three&quot;: &quot;https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js&quot;,
+    &quot;three/addons/&quot;: &quot;https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/&quot;
+  }
+}
+&lt;/script&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div id=&quot;bar&quot;&gt;&lt;div class=&quot;st-pill done&quot;&gt;1. Sky &amp; HDRI Lighting&lt;/div&gt;&lt;div class=&quot;st-pill done&quot;&gt;2. Terrain &amp; Buildings&lt;/div&gt;&lt;div class=&quot;st-pill done&quot;&gt;3. 3D Vehicle/Character GLB&lt;/div&gt;&lt;div class=&quot;st-pill active&quot;&gt;4. Physics &amp; Touch HUD&lt;/div&gt;&lt;div class=&quot;st-pill wait&quot;&gt;5. Playwright Vision QA&lt;/div&gt;&lt;div class=&quot;st-pill wait&quot;&gt;6. Native APK Ready&lt;/div&gt;&lt;/div&gt;
+&lt;div id=&quot;title-badge&quot;&gt;3D Live Assembly (3d_vehicle): Build a realistic 3D Indian Fauji Army Cargo Truck Mountain Driving Game for And&lt;/div&gt;
+&lt;div id=&quot;hud&quot;&gt;
+  &lt;div class=&quot;joy&quot; id=&quot;steerBtn&quot;&gt;STEER&lt;/div&gt;
+  &lt;div class=&quot;btns&quot;&gt;
+    &lt;button class=&quot;btn-act btn-brk&quot; id=&quot;brkBtn&quot;&gt;BRK&lt;/button&gt;
+    &lt;button class=&quot;btn-act btn-gas&quot; id=&quot;gasBtn&quot;&gt;ACTION / GAS&lt;/button&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+&lt;script type=&quot;module&quot;&gt;
+import * as THREE from &#x27;three&#x27;;
+import { OrbitControls } from &#x27;three/addons/controls/OrbitControls.js&#x27;;
+import { GLTFLoader } from &#x27;three/addons/loaders/GLTFLoader.js&#x27;;
+import { DRACOLoader } from &#x27;three/addons/loaders/DRACOLoader.js&#x27;;
+import { Sky } from &#x27;three/addons/objects/Sky.js&#x27;;
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.FogExp2(0x111827, 0.008);
+const camera = new THREE.PerspectiveCamera(60, window.innerWidth / 430, 0.1, 600);
+camera.position.set(10, 6.5, 14);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setSize(window.innerWidth, 430);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+renderer.shadowMap.enabled = true;
+document.body.appendChild(renderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.autoRotate = true;
+controls.autoRotateSpeed = 0.8;
+
+const sky = new Sky();
+sky.scale.setScalar(4500);
+scene.add(sky);
+const sun = new THREE.Vector3();
+const phi = THREE.MathUtils.degToRad(90 - 18);
+const theta = THREE.MathUtils.degToRad(140);
+sun.setFromSphericalCoords(1, phi, theta);
+sky.material.uniforms[&#x27;sunPosition&#x27;].value.copy(sun);
+sky.material.uniforms[&#x27;turbidity&#x27;].value = 6;
+sky.material.uniforms[&#x27;rayleigh&#x27;].value = 2;
+
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(sky).texture;
+
+const dirLight = new THREE.DirectionalLight(0xfff4e0, 2.4);
+dirLight.position.set(20, 35, 18);
+dirLight.castShadow = true;
+scene.add(dirLight);
+scene.add(new THREE.HemisphereLight(0x87ceeb, 0x334155, 0.8));
+
+const texLoader = new THREE.TextureLoader();
+const terrainTex = texLoader.load(&#x27;https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/rocky_terrain_02/rocky_terrain_02_diff_1k.jpg&#x27;);
+terrainTex.wrapS = terrainTex.wrapT = THREE.RepeatWrapping;
+terrainTex.repeat.set(18, 18);
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(180, 180),
+  new THREE.MeshStandardMaterial({ map: terrainTex, roughness: 0.9 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const roadTex = texLoader.load(&#x27;https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/asphalt_02/asphalt_02_diff_1k.jpg&#x27;);
+roadTex.wrapS = roadTex.wrapT = THREE.RepeatWrapping;
+roadTex.repeat.set(1, 20);
+const road = new THREE.Mesh(
+  new THREE.PlaneGeometry(10, 180),
+  new THREE.MeshStandardMaterial({ map: roadTex, roughness: 0.7 })
+);
+road.rotation.x = -Math.PI / 2;
+road.position.y = 0.02;
+road.receiveShadow = true;
+scene.add(road);
+
+if (true) {
+  // Mountain Peaks on both sides &amp; horizon
+  const mtnMat = new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.92, flatShading: true });
+  const snowMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7, flatShading: true });
+  for (let i = -5; i &lt;= 5; i++) {
+    const mh = 18 + (Math.abs(i * 7) % 16);
+    const mw = 14 + (Math.abs(i * 3) % 8);
+    const mL = new THREE.Mesh(new THREE.ConeGeometry(mw, mh, 6), mtnMat);
+    mL.position.set(-34 - (Math.abs(i) % 3) * 8, mh / 2 - 1, i * 26);
+    scene.add(mL);
+    const capL = new THREE.Mesh(new THREE.ConeGeometry(mw * 0.38, mh * 0.38, 6), snowMat);
+    capL.position.set(mL.position.x, mh * 0.81 - 1, mL.position.z);
+    scene.add(capL);
+
+    const mR = new THREE.Mesh(new THREE.ConeGeometry(mw, mh + 4, 6), mtnMat);
+    mR.position.set(34 + (Math.abs(i) % 3) * 8, (mh + 4) / 2 - 1, i * 26);
+    scene.add(mR);
+    const capR = new THREE.Mesh(new THREE.ConeGeometry(mw * 0.38, (mh + 4) * 0.38, 6), snowMat);
+    capR.position.set(mR.position.x, (mh + 4) * 0.81 - 1, mR.position.z);
+    scene.add(capR);
+  }
+
+  // Houses / Army Basecamp Structures, Watchtowers &amp; Pine Trees
+  const wallMat = new THREE.MeshStandardMaterial({ color: 0x4b5320, roughness: 0.8 });
+  const roofMat = new THREE.MeshStandardMaterial({ color: 0x365314, roughness: 0.7 });
+  const winMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfacc15, emissiveIntensity: 0.6 });
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 });
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x14532d, roughness: 0.85, flatShading: true });
+
+  for (let i = -3; i &lt;= 3; i++) {
+    // Basecamp / Barracks with pitched roof &amp; glowing windows
+    const side = i % 2 === 0 ? -12 : 12;
+    const hGroup = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(6.5, 3.6, 5.2), wallMat);
+    body.position.y = 1.8;
+    body.castShadow = true;
+    hGroup.add(body);
+    const roof = new THREE.Mesh(new THREE.ConeGeometry(5.2, 2.2, 4), roofMat);
+    roof.position.y = 4.7;
+    roof.rotation.y = Math.PI / 4;
+    roof.castShadow = true;
+    hGroup.add(roof);
+    const win = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.0, 0.2), winMat);
+    win.position.set(0, 2.0, side &lt; 0 ? 2.62 : -2.62);
+    hGroup.add(win);
+    hGroup.position.set(side, 0, i * 18);
+    scene.add(hGroup);
+
+    // Watchtower
+    if (i % 2 !== 0) {
+      const tw = new THREE.Group();
+      const post = new THREE.Mesh(new THREE.BoxGeometry(1.8, 7.0, 1.8), trunkMat);
+      post.position.y = 3.5;
+      tw.add(post);
+      const cabin = new THREE.Mesh(new THREE.BoxGeometry(3.2, 2.2, 3.2), roofMat);
+      cabin.position.y = 7.6;
+      tw.add(cabin);
+      tw.position.set(-side, 0, i * 18 + 6);
+      scene.add(tw);
+    }
+
+    // Pine trees
+    for (let t = 0; t &lt; 2; t++) {
+      const tree = new THREE.Group();
+      const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.35, 2.2, 6), trunkMat);
+      tr.position.y = 1.1;
+      tree.add(tr);
+      const lf = new THREE.Mesh(new THREE.ConeGeometry(1.8, 4.5, 7), leafMat);
+      lf.position.y = 3.8;
+      tree.add(lf);
+      tree.position.set((t === 0 ? -19 : 19), 0, i * 18 + t * 8);
+      scene.add(tree);
+    }
+  }
+}
+
+let heroGroup = new THREE.Group();
+let wheelMeshes = [];
+scene.add(heroGroup);
+
+function buildProceduralHero(genre, promptStr) {
+  const g = new THREE.Group();
+  const lowP = (promptStr || &quot;&quot;).toLowerCase();
+  const isCar = /(car|ferrari|lambo|drift|racing|supercar|sedan|suv)/.test(lowP) &amp;&amp; !/(truck|army|fauji|military|cargo|tank)/.test(lowP);
+  if (isCar) {
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0xdc2626, roughness: 0.25, metalness: 0.75 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.1, metalness: 0.9 });
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.65, 4.6), bodyMat);
+    base.position.y = 0.65;
+    base.castShadow = true;
+    g.add(base);
+    const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.75, 0.55, 2.2), glassMat);
+    cabin.position.set(0, 1.2, 0.1);
+    g.add(cabin);
+    const spoiler = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.12, 0.45), bodyMat);
+    spoiler.position.set(0, 1.25, 2.05);
+    g.add(spoiler);
+    [-1.08, 1.08].forEach(wx =&gt; {
+      [-1.4, 1.4].forEach(wz =&gt; {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.34, 16), tireMat);
+        w.rotation.z = Math.PI / 2;
+        w.position.set(wx, 0.42, wz);
+        g.add(w);
+        wheelMeshes.push(w);
+      });
+    });
+  } else if (genre === &quot;3d_vehicle&quot; || genre === &quot;3d_world&quot;) {
+    const olive = new THREE.MeshStandardMaterial({ color: 0x3f6212, roughness: 0.55, metalness: 0.2 });
+    const darkMetal = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.4, metalness: 0.7 });
+    const canvasMat = new THREE.MeshStandardMaterial({ color: 0x4d7c0f, roughness: 0.85 });
+    const glassMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, roughness: 0.15, metalness: 0.8 });
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.9 });
+    const lightMat = new THREE.MeshStandardMaterial({ color: 0xfef08a, emissive: 0xfacc15, emissiveIntensity: 1.5 });
+
+    // Chassis
+    const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.3, 0.45, 6.2), darkMetal);
+    chassis.position.y = 0.85;
+    chassis.castShadow = true;
+    g.add(chassis);
+    // Cab
+    const cab = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.55, 2.0), olive);
+    cab.position.set(0, 1.75, -1.8);
+    cab.castShadow = true;
+    g.add(cab);
+    // Windshield
+    const wind = new THREE.Mesh(new THREE.BoxGeometry(1.9, 0.7, 0.12), glassMat);
+    wind.position.set(0, 2.0, -2.81);
+    g.add(wind);
+    // Headlights
+    [-0.75, 0.75].forEach(hx =&gt; {
+      const hl = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.22, 0.12), lightMat);
+      hl.position.set(hx, 1.25, -2.82);
+      g.add(hl);
+    });
+    // Cargo Bed + Canvas Cover
+    const bed = new THREE.Mesh(new THREE.BoxGeometry(2.3, 1.65, 3.6), canvasMat);
+    bed.position.set(0, 1.85, 1.15);
+    bed.castShadow = true;
+    g.add(bed);
+    // 6x6 Wheels
+    [-1.22, 1.22].forEach(wx =&gt; {
+      [-1.9, 0.5, 2.1].forEach(wz =&gt; {
+        const w = new THREE.Mesh(new THREE.CylinderGeometry(0.55, 0.55, 0.42, 16), tireMat);
+        w.rotation.z = Math.PI / 2;
+        w.position.set(wx, 0.55, wz);
+        w.castShadow = true;
+        g.add(w);
+        wheelMeshes.push(w);
+      });
+    });
+  } else {
+    const armor = new THREE.MeshStandardMaterial({ color: 0x365314, roughness: 0.5 });
+    const torso = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.4, 0.6), armor);
+    torso.position.y = 1.6;
+    g.add(torso);
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.38, 12, 12), new THREE.MeshStandardMaterial({ color: 0x4d7c0f }));
+    head.position.y = 2.65;
+    g.add(head);
+  }
+  return g;
+}
+
+if (true) {
+  // Instant procedural 3D Fauji Truck / Hero so viewport is NEVER empty
+  const procHero = buildProceduralHero(&quot;3d_vehicle&quot;, &quot;Build a realistic 3D Indian Fauji Army Cargo Truck Mountain Driving Game for And&quot;);
+  try {  } catch(e) { console.warn(e); }
+  if (heroGroup.children.length === 0)
+  heroGroup.add(procHero);
+  const gltfLoader = new GLTFLoader();
+  const draco = new DRACOLoader();
+  draco.setDecoderPath(https://www.gstatic.com/draco/versioned/decoders/1.5.7/);
+  gltfLoader.setDRACOLoader(draco);
+  if (https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb &amp;&amp; https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb.endsWith(.glb)) {
+    gltfLoader.load(https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Assets/main/Models/CesiumMilkTruck/glTF-Binary/CesiumMilkTruck.glb, (gltf) =&gt; {
+      const m = gltf.scene;
+      const box = new THREE.Box3().setFromObject(m);
+      const size = box.getSize(new THREE.Vector3());
+      const maxDim = Math.max(size.x, size.y, size.z) || 1;
+      if (isFinite(maxDim) &amp;&amp; maxDim &gt; 0.01) {
+        const s = 4.6 / maxDim;
+        m.scale.setScalar(s);
+        const b2 = new THREE.Box3().setFromObject(m);
+        m.position.y -= b2.min.y;
+        m.traverse(c =&gt; { if (c.isMesh) { c.castShadow = true; c.receiveShadow = true; } });
+        heroGroup.remove(procHero);
+        heroGroup.add(m);
+      }
+    });
+  }
+}
+
+let speed = 0;
+let steerDir = 0;
+document.getElementById(gasBtn)?.addEventListener(click, () =&gt; { speed = 0.22; controls.autoRotate = false; });
+document.getElementById(brkBtn)?.addEventListener(click, () =&gt; { speed = 0; });
+document.getElementById(steerBtn)?.addEventListener(click, () =&gt; { steerDir = steerDir === 0 ? 1 : (steerDir === 1 ? -1 : 0); });
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (speed &gt; 0) {
+    heroGroup.position.z -= speed;
+    heroGroup.position.x = Math.max(-4, Math.min(4, heroGroup.position.x + steerDir * 0.05));
+    if (heroGroup.position.z &lt; -70) heroGroup.position.z = 70;
+    wheelMeshes.forEach(w =&gt; w.rotation.x -= speed * 1.4);
+    controls.target.copy(heroGroup.position).add(new THREE.Vector3(0, 1.5, 0));
+  }
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;" style="width:100%;height:460px;border:1px solid rgba(56,189,248,0.35);border-radius:16px;background:#060913;" sandbox="allow-scripts allow-same-origin"></iframe>
